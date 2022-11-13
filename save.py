@@ -1,8 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+import os
 import re
 
 import pandas as pd
+from sqlalchemy import create_engine
 
+from models import SearchQuery
 
 def get_latest_file_path_for_s3():
     """Get the latest log file from S3 bucket based on datetime."""
@@ -10,20 +13,23 @@ def get_latest_file_path_for_s3():
     # day format: dt=2022-11-13/
     # file format: 2022-11-13-00.tsv.gz
     current_date = datetime.now().strftime("%Y-%m-%d")
-    current_date_time = datetime.now().strftime("%Y-%m-%d-%H")
+    current_date_minus_one_hour = (datetime.now() - timedelta(hours=1)).strftime("%Y-%m-%d-%H")
     bucket = "ourresearch-papertrail"
     folder = f"dt={current_date}"
-    file_name = f"{current_date_time}.tsv.gz"
+    file_name = f"{current_date_minus_one_hour}.tsv.gz"
     file_path = f"s3://{bucket}/logs/{folder}/{file_name}"
     return file_path
 
 
 def process_log_file():
+    start_time = datetime.now()
     file_path = get_latest_file_path_for_s3()
     chunksize = 10000
     with pd.read_csv(file_path, chunksize=chunksize, sep="\t") as reader:
         for chunk in reader:
             process_chunk(chunk)
+    end_time = datetime.now()
+    print(f"total time: {end_time - start_time}")
 
 
 def process_chunk(chunk):
@@ -49,7 +55,8 @@ def process_chunk(chunk):
                     query = re.search(r"suggest\?q=(.*)&?", request_path)
                 if query:
                     query = query.group(1)
-                    print(f"{search_type}\t{endpoint}\t{query}")
+                    save_to_db(timestamp, ip_address, endpoint, search_type, query)
+                    print(f"saving {timestamp} {ip_address} {endpoint} {search_type} {query}")
 
 
 def find_suggest_query(path):
@@ -70,5 +77,17 @@ def get_endpoint(path):
         return "works"
 
 
+def save_to_db(timestamp, ip_address, endpoint, search_type, query):
+    sq = SearchQuery(
+        timestamp=timestamp,
+        ip_address=ip_address,
+        endpoint=endpoint,
+        type=search_type,
+        query=query,
+    )
+    sq.save()
+
+
 if __name__ == '__main__':
+    engine = create_engine(os.getenv("DATABASE_URL"))
     process_log_file()

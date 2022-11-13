@@ -1,2 +1,3 @@
 pandas==1.5.1
 s3fs==2022.11.0
+sqlalchemy==1.4.44
