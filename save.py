@@ -59,7 +59,7 @@ def process_chunk(chunk, session):
                     query = query.group(1)
                     save_to_db(timestamp, ip_address, endpoint, search_type, query, session)
                     print(f"saving {timestamp} {ip_address} {endpoint} {search_type} {query}")
-    print(f"committing")
+    print(f"chunk processed")
     session.commit()
 
 
