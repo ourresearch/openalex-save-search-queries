@@ -26,7 +26,7 @@ def get_latest_file_path_for_s3():
 def process_log_file(session):
     start_time = datetime.now()
     file_path = get_latest_file_path_for_s3()
-    chunksize = 10000
+    chunksize = 100000
     with pd.read_csv(file_path, chunksize=chunksize, sep="\t") as reader:
         for chunk in reader:
             process_chunk(chunk, session)
@@ -41,7 +41,7 @@ def process_chunk(chunk, session):
         ip_address = row[5]
         service_type = row[8]  # heroku/router
         path = row[9]
-        if service == "openalex-api-proxy" and service_type == "heroku/router":
+        if service == "openalex-api-proxy" and service_type == "heroku/router" and "team@ourresearch.org" in path:
             request_path = re.search(r"path=\"(.*?)\"", path)
             if request_path:
                 request_path = request_path.group(1)
@@ -59,11 +59,8 @@ def process_chunk(chunk, session):
                     query = query.group(1)
                     save_to_db(timestamp, ip_address, endpoint, search_type, query, session)
                     print(f"saving {timestamp} {ip_address} {endpoint} {search_type} {query}")
-
-
-def find_suggest_query(path):
-    query = re.search(r"path=\"(.*?)\"", path)
-    print(query.group(1))
+    print(f"committing")
+    session.commit()
 
 
 def get_endpoint(path):
@@ -80,15 +77,19 @@ def get_endpoint(path):
 
 
 def save_to_db(timestamp, ip_address, endpoint, search_type, query, session):
-    sq = SearchQuery(
-        timestamp=timestamp,
-        ip_address=ip_address,
-        endpoint=endpoint,
-        type=search_type,
-        query=query,
-    )
-    session.add(sq)
-    session.commit()
+    existing_record = session.query(SearchQuery).filter_by(query=query,endpoint=endpoint,type=search_type).first()
+    if existing_record:
+        existing_record.count = existing_record.count + 1
+    else:
+        search_query = SearchQuery(
+            timestamp=timestamp,
+            ip_address=ip_address,
+            endpoint=endpoint,
+            type=search_type,
+            query=query,
+            count=1,
+        )
+        session.add(search_query)
 
 
 if __name__ == '__main__':
