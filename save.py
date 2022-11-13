@@ -42,25 +42,29 @@ def process_chunk(chunk, session):
         service_type = row[8]  # heroku/router
         path = row[9]
         if service == "openalex-api-proxy" and service_type == "heroku/router" and "team@ourresearch.org" in path:
-            request_path = re.search(r"path=\"(.*?)\"", path)
-            if request_path:
-                request_path = request_path.group(1)
-                query = None
-                endpoint = None
-                search_type = None
-                if "search=" in request_path:
-                    search_type = "search"
-                    endpoint = get_endpoint(request_path)
-                    query = re.search(r"search=(.*?)&", request_path)
-                elif "/suggest" in request_path:
-                    search_type = "suggest"
-                    query = re.search(r"suggest\?q=(.*)&?", request_path)
-                if query:
-                    query = query.group(1)
-                    save_to_db(timestamp, ip_address, endpoint, search_type, query, session)
-                    print(f"saving {timestamp} {ip_address} {endpoint} {search_type} {query}")
+            process_record(ip_address, path, session, timestamp)
     print(f"chunk processed")
     session.commit()
+
+
+def process_record(ip_address, path, session, timestamp):
+    request_path = re.search(r"path=\"(.*?)\"", path)
+    if request_path:
+        request_path = request_path.group(1)
+        query = None
+        endpoint = None
+        search_type = None
+        if "search=" in request_path:
+            search_type = "search"
+            endpoint = get_endpoint(request_path)
+            query = re.search(r"search=(.*?)&", request_path)
+        elif "/suggest" in request_path:
+            search_type = "suggest"
+            query = re.search(r"suggest\?q=(.*)&?", request_path)
+        if query:
+            query = query.group(1)
+            save_to_db(timestamp, ip_address, endpoint, search_type, query, session)
+            print(f"saving {timestamp} {ip_address} {endpoint} {search_type} {query}")
 
 
 def get_endpoint(path):
