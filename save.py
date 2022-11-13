@@ -4,8 +4,10 @@ import re
 
 import pandas as pd
 from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 
 from models import SearchQuery
+
 
 def get_latest_file_path_for_s3():
     """Get the latest log file from S3 bucket based on datetime."""
@@ -21,25 +23,25 @@ def get_latest_file_path_for_s3():
     return file_path
 
 
-def process_log_file():
+def process_log_file(session):
     start_time = datetime.now()
     file_path = get_latest_file_path_for_s3()
     chunksize = 10000
     with pd.read_csv(file_path, chunksize=chunksize, sep="\t") as reader:
         for chunk in reader:
-            process_chunk(chunk)
+            process_chunk(chunk, session)
     end_time = datetime.now()
     print(f"total time: {end_time - start_time}")
 
 
-def process_chunk(chunk):
+def process_chunk(chunk, session):
     for index, row in chunk.iterrows():
         timestamp = row[1]
         service = row[4]  # openalex-api-proxy
         ip_address = row[5]
         service_type = row[8]  # heroku/router
         path = row[9]
-        if service == "openalex-api-proxy" and service_type == "heroku/router" and "team@ourresearch.org" in path:
+        if service == "openalex-api-proxy" and service_type == "heroku/router":
             request_path = re.search(r"path=\"(.*?)\"", path)
             if request_path:
                 request_path = request_path.group(1)
@@ -55,7 +57,7 @@ def process_chunk(chunk):
                     query = re.search(r"suggest\?q=(.*)&?", request_path)
                 if query:
                     query = query.group(1)
-                    save_to_db(timestamp, ip_address, endpoint, search_type, query)
+                    save_to_db(timestamp, ip_address, endpoint, search_type, query, session)
                     print(f"saving {timestamp} {ip_address} {endpoint} {search_type} {query}")
 
 
@@ -77,7 +79,7 @@ def get_endpoint(path):
         return "works"
 
 
-def save_to_db(timestamp, ip_address, endpoint, search_type, query):
+def save_to_db(timestamp, ip_address, endpoint, search_type, query, session):
     sq = SearchQuery(
         timestamp=timestamp,
         ip_address=ip_address,
@@ -85,9 +87,11 @@ def save_to_db(timestamp, ip_address, endpoint, search_type, query):
         type=search_type,
         query=query,
     )
-    sq.save()
+    session.add(sq)
+    session.commit()
 
 
 if __name__ == '__main__':
     engine = create_engine(os.getenv("DATABASE_URL"))
-    process_log_file()
+    session = Session(engine)
+    process_log_file(session)
