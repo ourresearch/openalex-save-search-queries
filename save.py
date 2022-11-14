@@ -43,10 +43,10 @@ def process_record(ip_address, path, session, timestamp):
         if "search=" in request_path:
             search_type = "search"
             endpoint = get_endpoint(request_path)
-            query = re.search(r"search=(.*?)&", request_path)
+            query = re.search(r"[?&]search=([^&]*)", request_path)
         elif "/suggest" in request_path:
             search_type = "suggest"
-            query = re.search(r"suggest\?q=(.*)&?", request_path)
+            query = re.search(r"[?&]q=([^&]*)", request_path)
         if query:
             query = query.group(1)
             save_to_db(timestamp, ip_address, endpoint, search_type, query, session)
