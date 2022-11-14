@@ -1,3 +1,4 @@
 .env
 .idea/
 2022-11-11-15.tsv.gz
+__pycache__/
