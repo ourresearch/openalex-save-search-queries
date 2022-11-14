@@ -71,11 +71,11 @@ def get_latest_file_path_for_s3():
     # folder: /logs
     # day format: dt=2022-11-13/
     # file format: 2022-11-13-00.tsv.gz
-    current_date = datetime.now().strftime("%Y-%m-%d")
-    current_date_minus_one_hour = (datetime.now() - timedelta(hours=1)).strftime("%Y-%m-%d-%H")
+    current_date = (datetime.now() - timedelta(hours=7)).strftime("%Y-%m-%d")
+    current_date_minus_seven_hours = (datetime.now() - timedelta(hours=7)).strftime("%Y-%m-%d-%H")
     bucket = "ourresearch-papertrail"
     folder = f"dt={current_date}"
-    file_name = f"{current_date_minus_one_hour}.tsv.gz"
+    file_name = f"{current_date_minus_seven_hours}.tsv.gz"
     file_path = f"s3://{bucket}/logs/{folder}/{file_name}"
     return file_path
 
