@@ -9,20 +9,6 @@ from sqlalchemy.orm import Session
 from models import SearchQuery
 
 
-def get_latest_file_path_for_s3():
-    """Get the latest log file from S3 bucket based on datetime."""
-    # folder: /logs
-    # day format: dt=2022-11-13/
-    # file format: 2022-11-13-00.tsv.gz
-    current_date = datetime.now().strftime("%Y-%m-%d")
-    current_date_minus_one_hour = (datetime.now() - timedelta(hours=1)).strftime("%Y-%m-%d-%H")
-    bucket = "ourresearch-papertrail"
-    folder = f"dt={current_date}"
-    file_name = f"{current_date_minus_one_hour}.tsv.gz"
-    file_path = f"s3://{bucket}/logs/{folder}/{file_name}"
-    return file_path
-
-
 def process_log_file(session):
     start_time = datetime.now()
     file_path = get_latest_file_path_for_s3()
@@ -78,6 +64,20 @@ def get_endpoint(path):
         return "venues"
     elif "/works" in path:
         return "works"
+
+
+def get_latest_file_path_for_s3():
+    """Get the latest log file from S3 bucket based on datetime."""
+    # folder: /logs
+    # day format: dt=2022-11-13/
+    # file format: 2022-11-13-00.tsv.gz
+    current_date = datetime.now().strftime("%Y-%m-%d")
+    current_date_minus_one_hour = (datetime.now() - timedelta(hours=1)).strftime("%Y-%m-%d-%H")
+    bucket = "ourresearch-papertrail"
+    folder = f"dt={current_date}"
+    file_name = f"{current_date_minus_one_hour}.tsv.gz"
+    file_path = f"s3://{bucket}/logs/{folder}/{file_name}"
+    return file_path
 
 
 def save_to_db(timestamp, ip_address, endpoint, search_type, query, session):
