@@ -49,6 +49,7 @@ def process_record(ip_address, path, session, timestamp):
             query = re.search(r"[?&]q=([^&]*)", request_path)
         if query:
             query = query.group(1)
+            query = clean_query(query)
             save_to_db(timestamp, ip_address, endpoint, search_type, query, session)
             print(f"saving {timestamp} {ip_address} {endpoint} {search_type} {query}")
 
@@ -71,8 +72,8 @@ def get_latest_file_path_for_s3():
     # folder: /logs
     # day format: dt=2022-11-13/
     # file format: 2022-11-13-00.tsv.gz
-    current_date = (datetime.now() - timedelta(hours=7)).strftime("%Y-%m-%d")
-    current_date_minus_seven_hours = (datetime.now() - timedelta(hours=7)).strftime("%Y-%m-%d-%H")
+    current_date = (datetime.utcnow() - timedelta(hours=7)).strftime("%Y-%m-%d")
+    current_date_minus_seven_hours = (datetime.utcnow() - timedelta(hours=7)).strftime("%Y-%m-%d-%H")
     bucket = "ourresearch-papertrail"
     folder = f"dt={current_date}"
     file_name = f"{current_date_minus_seven_hours}.tsv.gz"
@@ -94,6 +95,57 @@ def save_to_db(timestamp, ip_address, endpoint, search_type, query, session):
             count=1,
         )
         session.add(search_query)
+
+
+def clean_query(query):
+    query = query.replace("+", " ")
+    query = query.replace("%20", " ")
+    query = query.replace("%22", '"')
+    query = query.replace("%27", "'")
+    query = query.replace("%28", "(")
+    query = query.replace("%29", ")")
+    query = query.replace("%2B", "+")
+    query = query.replace("%2C", ",")
+    query = query.replace("%2F", "/")
+    query = query.replace("%3A", ":")
+    query = query.replace("%3B", ";")
+    query = query.replace("%3C", "<")
+    query = query.replace("%3D", "=")
+    query = query.replace("%3E", ">")
+    query = query.replace("%3F", "?")
+    query = query.replace("%5B", "[")
+    query = query.replace("%5D", "]")
+    query = query.replace("%7B", "{")
+    query = query.replace("%7D", "}")
+    query = query.replace("%7E", "~")
+    query = query.replace("%7C", "|")
+    query = query.replace("%5C", "\\")
+    query = query.replace("%25", "%")
+    query = query.replace("%23", "#")
+    query = query.replace("%24", "$")
+    query = query.replace("%26", "&")
+    query = query.replace("%2A", "*")
+    query = query.replace("%40", "@")
+    query = query.replace("%5E", "^")
+    query = query.replace("%60", "`")
+    query = query.replace("%21", "!")
+    query = query.replace("%2D", "-")
+    query = query.replace("%5F", "_")
+    query = query.replace("%2E", ".")
+    query = query.replace("%2C", ",")
+    query = query.replace("%3B", ";")
+    query = query.replace("%3A", ":")
+    query = query.replace("%3F", "?")
+    query = query.replace("%2F", "/")
+    query = query.replace("%7C", "|")
+    query = query.replace("%5C", "\\")
+    query = query.replace("%27", "'")
+    query = query.replace("%22", '"')
+    query = query.replace("%5E", "^")
+    query = query.replace("%60", "`")
+    query = query.replace("%7E", "~")
+    query = query.replace("%21", "!")
+    return query
 
 
 if __name__ == '__main__':
