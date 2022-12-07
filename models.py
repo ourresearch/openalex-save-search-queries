@@ -14,3 +14,12 @@ class SearchQuery(Base):
     count = Column(Integer, nullable=False)
     ip_address = Column(VARCHAR(255))
     timestamp = Column(DateTime, nullable=False)
+
+
+class APIUsage(Base):
+    __tablename__ = "api_usage"
+
+    id = Column(Integer, primary_key=True)
+    email = Column(VARCHAR(255))
+    domain = Column(VARCHAR(255))
+    count = Column(Integer, nullable=False)
