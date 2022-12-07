@@ -89,7 +89,7 @@ def save_to_db(email, domain, session):
 if __name__ == '__main__':
     engine = create_engine(os.getenv("DATABASE_URL"))
     session = Session(engine)
-    today = datetime.utcnow() - timedelta(hours=7)
+    today = datetime.utcnow() - timedelta(days=1)
     for i in range(30):
         day = today - timedelta(days=i)
         for hour in range(24):
